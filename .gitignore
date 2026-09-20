@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+install/
+log/
+
+# working notes, kept locally, never pushed
+HANDOFF.md
+PROJECT_STATE.md
+STUDY_REPORT.md
+INTERNALS.md
+*.pdf
