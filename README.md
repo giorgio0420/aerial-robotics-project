@@ -22,11 +22,12 @@ It is an independent reimplementation of the method described in
 > IEEE Transactions on Aerospace and Electronic Systems, 61(5), 2025.
 > [doi:10.1109/TAES.2025.3576083](https://doi.org/10.1109/TAES.2025.3576083)
 
-written for the Aerial Robotics course at Sapienza. The paper itself is not
-included here and nothing is copied from it: no text, figures or tables. The theory
-below is a summary in my own words of what the code does, the results come from my
-own simulations, and everything that departs from the original is stated as such.
-This repository is not affiliated with or endorsed by the authors.
+written by Giorgio De Santis and Matteo Zamponi for the Aerial Robotics course at
+Sapienza. The paper itself is not included here and nothing is copied from it: no
+text, figures or tables. The theory below is a summary in our own words of what the
+code does, the results come from our own simulations, and everything that departs
+from the original is stated as such. This repository is not affiliated with or
+endorsed by the paper's authors.
 
 ---
 
