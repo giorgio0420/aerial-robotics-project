@@ -8,7 +8,7 @@ find_package(ament_cmake REQUIRED)
 #Copy our folders to the install directory so ROS can find them
 
 install(
-DIRECTORY launch model parameters
+DIRECTORY launch model parameters worlds
 DESTINATION share/${PROJECT_NAME}
 )
 

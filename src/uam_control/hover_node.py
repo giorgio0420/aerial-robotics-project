@@ -18,7 +18,6 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Point
 from std_msgs.msg import Float64MultiArray
 
 from uam_control.controllers import (
@@ -277,8 +276,6 @@ class HoverNode(Node):
                                  qos_profile_sensor_data)
         self.create_subscription(JointState, '/joint_states', self.on_joints,
                                  qos_profile_sensor_data)
-        self.reference_marker = self.create_publisher(
-            Point, '/uav/reference', 1)
         self.rotors = self.create_publisher(Float64MultiArray, '/rotor_speeds', 10)
         self.joint_torques = self.create_publisher(Float64MultiArray, '/joint_torques', 10)
         # Eq. (50)'s wind impulses. Only `disturbance` scenario has nonzero
@@ -829,19 +826,6 @@ class HoverNode(Node):
                            realised[2], realised[0], realised[1],
                            target.roll, rate_command[0])
         self._log_reference = reference[0][[0, 2, 4]]
-        # The same point the trace records, sent to the plugin so the world draws
-        # it. Until this existed nothing on screen said where the vehicle was
-        # meant to be, and a run holding station to 12 cm looked exactly like one
-        # drifting ten metres.
-        #
-        # Referred back to the link frame, because that is what Gazebo's world
-        # coordinates are: `self.position` carries the 2 m offset onto the centre
-        # of mass, and drawing the marker there would put it two metres above the
-        # aircraft it is supposed to be marking.
-        self.reference_marker.publish(Point(
-            x=float(reference[0][0]), y=float(reference[0][2]),
-            z=float(reference[0][4] - LINK_TO_COM[2])))
-
         self.rotors.publish(Float64MultiArray(data=omega.tolist()))
         self.last_thrust = target.thrust
 

@@ -56,10 +56,12 @@ def generate_launch_description():
     # was still in this list, so the world ran during the six seconds the launch
     # takes and the vehicle was on the floor before the controller had a sample.
     # With the world paused until engagement that race is gone.
+    # Stock empty world, minus the sun's gizmo: see worlds/empty.sdf.
+    world = os.path.join(get_package_share_directory(namePackage), 'worlds', 'empty.sdf')
     headless = '-s ' if os.environ.get('UAM_GUI', '1') == '0' else ''
     gazeboLaunch = IncludeLaunchDescription(
         gazebo_rosPackageLaunch,
-        launch_arguments={'gz_args': [f'-v -v4 {headless}empty.sdf'],
+        launch_arguments={'gz_args': [f'-v -v4 {headless}{world}'],
                           'on_exit_shutdown': 'true'}.items()
     )
     

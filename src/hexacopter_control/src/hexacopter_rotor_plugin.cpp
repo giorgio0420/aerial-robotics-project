@@ -19,10 +19,8 @@
 #include <ignition/common/Console.hh>
 #include <ignition/plugin/Register.hh>
 #include <ignition/math/Vector3.hh>
-#include <ignition/msgs/marker.pb.h>
 #include <ignition/transport/Node.hh>
 #include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/msg/point.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
@@ -134,26 +132,6 @@ public:
         this->disturbanceTorque_ = {msg->data[3], msg->data[4], msg->data[5]};
       });
 
-    // The commanded pose, drawn in the world so a watcher can tell tracking from
-    // wandering. Until now nothing in the window said where the vehicle was
-    // *supposed* to be, so a run that held station to 12 cm and one that drifted
-    // ten metres looked the same on screen and could only be told apart in the
-    // CSV.
-    //
-    // Drawn from inside the plugin rather than from the controller because the
-    // marker service belongs to Ignition, not to ROS: a Python node would have to
-    // shell out to `ign service` once per tick, which costs more than the whole
-    // control loop. Here it is one in-process request on a transport node that is
-    // already open.
-    this->reference_ = this->node_->create_subscription<geometry_msgs::msg::Point>(
-      "/uav/reference", rclcpp::QoS(1),
-      [this](const geometry_msgs::msg::Point::SharedPtr msg)
-      {
-        std::lock_guard<std::mutex> lock(this->commandMutex_);
-        this->referencePoint_ = ignition::math::Vector3d(msg->x, msg->y, msg->z);
-        this->haveReference_ = true;
-      });
-
     this->odometry_ = this->node_->create_publisher<nav_msgs::msg::Odometry>(
       "/uav/odom", rclcpp::SensorDataQoS());
     this->baseLink_.EnableVelocityChecks(_ecm, true);
@@ -169,8 +147,6 @@ public:
       this->executor_->spin_some();
     if (_info.paused || this->baseLink_.Entity() == ignition::gazebo::kNullEntity)
       return;
-
-    this->DrawReference();
 
     // Resolve the rotor geometry from the model, once, on the first update.
     //
@@ -525,66 +501,6 @@ private:
   double kf_{2.772e-5};
   double km_{5.544e-7};
   double maxOmega_{900.0};
-  /// Draw the commanded pose as a sphere, plus a trail of where it has been.
-  ///
-  /// Decimated: the physics runs at 1 kHz and the eye does not, so redrawing
-  /// every step would spend more on the marker than on the vehicle. One in fifty
-  /// is 20 Hz, which is smooth on screen and matches the control rate.
-  ///
-  /// The trail uses a distinct namespace and an id that advances, so the points
-  /// accumulate instead of replacing each other -- that is what turns a moving
-  /// dot into a visible commanded path next to the flown one.
-  void DrawReference()
-  {
-    ignition::math::Vector3d target;
-    {
-      std::lock_guard<std::mutex> lock(this->commandMutex_);
-      if (!this->haveReference_)
-        return;
-      target = this->referencePoint_;
-    }
-    if (this->markerCounter_++ % 50 != 0)
-      return;
-
-    ignition::msgs::Marker marker;
-    marker.set_ns("riferimento");
-    marker.set_id(1);
-    marker.set_action(ignition::msgs::Marker::ADD_MODIFY);
-    marker.set_type(ignition::msgs::Marker::SPHERE);
-    marker.mutable_lifetime()->set_sec(0);
-    marker.mutable_material()->mutable_ambient()->set_r(0.1f);
-    marker.mutable_material()->mutable_ambient()->set_g(0.9f);
-    marker.mutable_material()->mutable_ambient()->set_b(0.2f);
-    marker.mutable_material()->mutable_ambient()->set_a(0.6f);
-    marker.mutable_material()->mutable_diffuse()->set_r(0.1f);
-    marker.mutable_material()->mutable_diffuse()->set_g(0.9f);
-    marker.mutable_material()->mutable_diffuse()->set_b(0.2f);
-    marker.mutable_material()->mutable_diffuse()->set_a(0.6f);
-    ignition::msgs::Set(marker.mutable_scale(),
-                        ignition::math::Vector3d(0.35, 0.35, 0.35));
-    ignition::msgs::Set(marker.mutable_pose(),
-                        ignition::math::Pose3d(target, ignition::math::Quaterniond::Identity));
-    this->markerNode_.Request("/marker", marker);
-
-    // The path it has traced, one small marker per sample, kept for good.
-    ignition::msgs::Marker trail;
-    trail.set_ns("scia");
-    trail.set_id(1 + this->markerCounter_ / 50);
-    trail.set_action(ignition::msgs::Marker::ADD_MODIFY);
-    trail.set_type(ignition::msgs::Marker::SPHERE);
-    trail.mutable_material()->mutable_ambient()->set_r(0.1f);
-    trail.mutable_material()->mutable_ambient()->set_g(0.6f);
-    trail.mutable_material()->mutable_ambient()->set_b(1.0f);
-    trail.mutable_material()->mutable_diffuse()->set_r(0.1f);
-    trail.mutable_material()->mutable_diffuse()->set_g(0.6f);
-    trail.mutable_material()->mutable_diffuse()->set_b(1.0f);
-    ignition::msgs::Set(trail.mutable_scale(),
-                        ignition::math::Vector3d(0.08, 0.08, 0.08));
-    ignition::msgs::Set(trail.mutable_pose(),
-                        ignition::math::Pose3d(target, ignition::math::Quaterniond::Identity));
-    this->markerNode_.Request("/marker", trail);
-  }
-
   std::mutex commandMutex_;
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr subscription_;
@@ -599,13 +515,6 @@ private:
   ignition::math::Vector3d disturbanceForce_{0, 0, 0};
   ignition::math::Vector3d disturbanceTorque_{0, 0, 0};
 
-  // Reference marker. `markerNode_` talks to Ignition's own transport, which is
-  // a different bus from the ROS one the rest of this plugin uses.
-  rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr reference_;
-  ignition::transport::Node markerNode_;
-  ignition::math::Vector3d referencePoint_{0, 0, 0};
-  bool haveReference_{false};
-  std::uint64_t markerCounter_{0};
   // Held by pointer, not by value. The executor builds a guard condition
   // against the global rclcpp context, so constructing it requires that
   // context to exist. Gazebo constructs the plugin object before it ever calls
