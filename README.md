@@ -251,3 +251,8 @@ tools/                             iae.py, report.py — read a trace.csv
 The Gazebo hexarotor model in `src/hexacopter_sim/` is adapted from work by
 mohit-mesh, released under the MIT License (see
 [`src/hexacopter_sim/LICENSE`](src/hexacopter_sim/LICENSE)).
+
+## License
+
+The code in this repository is released under the MIT License, see [`LICENSE`](LICENSE).
+The license covers this implementation only, not the paper it is based on.
