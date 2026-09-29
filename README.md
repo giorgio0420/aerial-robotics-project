@@ -37,8 +37,10 @@ The vehicle is a rigid body with position $\xi$, attitude $\eta = (\phi, \theta,
 and body rate $\omega = (p, q, r)$. The arm hangs below it with joint angles
 $\Theta \in \mathbb{R}^3$. Newton–Euler for the vehicle alone would read
 
-$$m\ddot{\xi} = R(\eta)\, f_z e_3 - m g e_3 + f_{rea}, \qquad
-I\dot{\omega} = -\omega \times I\omega + \tau + \tau_{rea}$$
+```math
+m\ddot{\xi} = R(\eta)\, f_z e_3 - m g e_3 + f_{rea}, \qquad
+I\dot{\omega} = -\omega \times I\omega + \tau + \tau_{rea}
+```
 
 and everything interesting sits in $f_{rea}$ and $\tau_{rea}$, the force and torque
 the arm exerts on the vehicle at its mount. They depend on the arm's configuration,
@@ -53,12 +55,14 @@ vehicle's angular acceleration, exactly quadratic in its angular rate and affine
 the thrust. That structure is what the method exploits: the reaction torque can be
 factored as
 
-$$\tau_{rea} = M_d(\Theta)\,\dot{\omega}
+```math
+\tau_{rea} = M_d(\Theta)\,\dot{\omega}
 + M_c(\Theta)\begin{bmatrix} pq \\ qr \\ pr \end{bmatrix}
 + M_s(\Theta)\begin{bmatrix} p^2 \\ q^2 \\ r^2 \end{bmatrix}
-+ M_l(\Theta,\dot\Theta)\,\omega + \bar{\tau}$$
++ M_l(\Theta,\dot\Theta)\,\omega + \bar{\tau}
+```
 
-and the reaction force as $f_{rea} = M_f\, f_z + \bar{f}$. The matrices change with
+and the reaction force as $f_{rea} = M_f  f_z + \bar{f}$. The matrices change with
 the arm's configuration; $\bar\tau$ and $\bar f$ collect whatever does not depend on
 the vehicle's rotation or thrust.
 
@@ -75,20 +79,24 @@ the closed form agrees with the numerical recursion to about $10^{-15}$.
 
 **Rotation.** With $\rho = \omega$ as the scheduling signal,
 
-$$\dot\omega = (I - M_d)^{-1}\Big[\big(M_c^{tot}\,\mathrm{diag}(q, r, p) + M_s^{tot}\,\mathrm{diag}(p, q, r) + M_l\big)\,\omega + (\tau + \bar\tau)\Big]$$
+```math
+\dot\omega = (I - M_d)^{-1}\Big[\big(M_c^{tot}\,\mathrm{diag}(q, r, p) + M_s^{tot}\,\mathrm{diag}(p, q, r) + M_l\big)\,\omega + (\tau + \bar\tau)\Big]
+```
 
 where $M_c^{tot}$ and $M_s^{tot}$ include the vehicle's own gyroscopic term. The state
 is the body rate $[p, q, r]$, the input is $\tau + \bar\tau$.
 
-**Arm.** The manipulator's equation $M(\Theta)\ddot\Theta + C\,\dot\Theta + G(\Theta) = \tau_{arm}$
+**Arm.** The manipulator's equation $M(\Theta)\ddot\Theta + C \dot\Theta + G(\Theta) = \tau_{arm}$
 is put in the same shape by splitting gravity into a part linear in $\Theta$ and a
-remainder, $G = Q\,\Theta - T$. With state $[\Theta, \dot\Theta]$ and input
+remainder, $G = Q \Theta - T$. With state $[\Theta, \dot\Theta]$ and input
 $\tau_{arm} + T$:
 
-$$\frac{d}{dt}\begin{bmatrix}\Theta\\ \dot\Theta\end{bmatrix} =
+```math
+\frac{d}{dt}\begin{bmatrix}\Theta\\ \dot\Theta\end{bmatrix} =
 \begin{bmatrix} 0 & I \\ -M^{-1}Q & -M^{-1}C \end{bmatrix}
 \begin{bmatrix}\Theta\\ \dot\Theta\end{bmatrix} +
-\begin{bmatrix} 0 \\ M^{-1}\end{bmatrix}(\tau_{arm} + T)$$
+\begin{bmatrix} 0 \\ M^{-1}\end{bmatrix}(\tau_{arm} + T)
+```
 
 Both models are rebuilt at every control step from the current measurement and
 discretised with a zero-order hold.
